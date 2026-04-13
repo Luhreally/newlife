@@ -1,4 +1,4 @@
-﻿const LEGACY_ENTRY = "./one_file_world.html";
+const LEGACY_ENTRY = new URL("../one_file_world.html", import.meta.url);
 const SCRIPT_MARKER = "(() => {";
 
 const bootShell = document.getElementById("bootShell");
