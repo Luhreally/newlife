@@ -1,0 +1,9 @@
+node_modules/
+
+_smoke.png
+_smoke_quick.png
+__smoke_world.html
+one_file_world_debug.png
+
+.DS_Store
+Thumbs.db
