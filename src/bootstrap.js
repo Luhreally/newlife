@@ -409,6 +409,205 @@ function createInspectorToggle(config) {
   document.body.append(button);
 }
 
+function makeMouseLikeEvent(type, point) {
+  return new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: point.x,
+    clientY: point.y,
+    button: 0,
+    buttons: type === "mouseup" ? 0 : 1,
+  });
+}
+
+function makeWheelLikeEvent(point, deltaY) {
+  return new WheelEvent("wheel", {
+    bubbles: true,
+    cancelable: true,
+    clientX: point.x,
+    clientY: point.y,
+    deltaX: 0,
+    deltaY,
+  });
+}
+
+function pinchSnapshot(pointerMap) {
+  const points = Array.from(pointerMap.values());
+  if (points.length < 2) return null;
+  const [a, b] = points;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  return {
+    distance: Math.hypot(dx, dy),
+    center: { x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5 },
+  };
+}
+
+function attachTouchBridge(config) {
+  const canvas = document.getElementById("worldCanvas");
+  if (!canvas || canvas.dataset.touchBridgeReady === "1") return;
+
+  const needsTouchBridge = config.device === "mobile" || window.matchMedia?.("(pointer: coarse)").matches;
+  if (!needsTouchBridge) return;
+
+  canvas.dataset.touchBridgeReady = "1";
+  canvas.style.touchAction = "none";
+
+  const bridge = {
+    activePointerId: null,
+    pointers: new Map(),
+    pinch: null,
+  };
+
+  function pointerPoint(event) {
+    return { x: event.clientX, y: event.clientY };
+  }
+
+  function endActiveDrag(point) {
+    if (bridge.activePointerId == null) return;
+    window.dispatchEvent(makeMouseLikeEvent("mouseup", point));
+    bridge.activePointerId = null;
+  }
+
+  if (window.PointerEvent) {
+    canvas.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse") return;
+      event.preventDefault();
+
+      const point = pointerPoint(event);
+      bridge.pointers.set(event.pointerId, point);
+
+      if (bridge.pointers.size === 1) {
+        bridge.activePointerId = event.pointerId;
+        canvas.dispatchEvent(makeMouseLikeEvent("mousedown", point));
+        return;
+      }
+
+      if (bridge.pointers.size === 2) {
+        endActiveDrag(point);
+        bridge.pinch = pinchSnapshot(bridge.pointers);
+      }
+    }, { passive: false });
+
+    window.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "mouse" || !bridge.pointers.has(event.pointerId)) return;
+      event.preventDefault();
+
+      const point = pointerPoint(event);
+      bridge.pointers.set(event.pointerId, point);
+
+      if (bridge.pointers.size === 1 && bridge.activePointerId === event.pointerId) {
+        window.dispatchEvent(makeMouseLikeEvent("mousemove", point));
+        return;
+      }
+
+      if (bridge.pointers.size >= 2) {
+        const nextPinch = pinchSnapshot(bridge.pointers);
+        if (bridge.pinch && nextPinch) {
+          const deltaDistance = nextPinch.distance - bridge.pinch.distance;
+          if (Math.abs(deltaDistance) > 2) {
+            const deltaY = clamp(-deltaDistance * 2.2, -140, 140);
+            canvas.dispatchEvent(makeWheelLikeEvent(nextPinch.center, deltaY));
+          }
+        }
+        bridge.pinch = nextPinch;
+      }
+    }, { passive: false });
+
+    function finishPointer(event) {
+      if (event.pointerType === "mouse" || !bridge.pointers.has(event.pointerId)) return;
+      event.preventDefault();
+
+      const point = pointerPoint(event);
+      const wasSingleDrag = bridge.activePointerId === event.pointerId && bridge.pointers.size === 1;
+
+      bridge.pointers.delete(event.pointerId);
+
+      if (wasSingleDrag) {
+        endActiveDrag(point);
+      }
+
+      if (bridge.pointers.size < 2) {
+        bridge.pinch = null;
+      }
+    }
+
+    window.addEventListener("pointerup", finishPointer, { passive: false });
+    window.addEventListener("pointercancel", finishPointer, { passive: false });
+    return;
+  }
+
+  let activeTouchId = null;
+  let pinch = null;
+
+  function touchPoint(touch) {
+    return { x: touch.clientX, y: touch.clientY };
+  }
+
+  canvas.addEventListener("touchstart", (event) => {
+    event.preventDefault();
+
+    if (event.touches.length === 1) {
+      const touch = event.touches[0];
+      activeTouchId = touch.identifier;
+      canvas.dispatchEvent(makeMouseLikeEvent("mousedown", touchPoint(touch)));
+      return;
+    }
+
+    if (event.touches.length >= 2) {
+      const touch = Array.from(event.changedTouches)[0] || event.touches[0];
+      if (activeTouchId != null && touch) {
+        window.dispatchEvent(makeMouseLikeEvent("mouseup", touchPoint(touch)));
+      }
+      activeTouchId = null;
+      const map = new Map(Array.from(event.touches).slice(0, 2).map((touchItem) => [touchItem.identifier, touchPoint(touchItem)]));
+      pinch = pinchSnapshot(map);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener("touchmove", (event) => {
+    event.preventDefault();
+
+    if (event.touches.length === 1 && activeTouchId != null) {
+      const touch = Array.from(event.touches).find((item) => item.identifier === activeTouchId) || event.touches[0];
+      window.dispatchEvent(makeMouseLikeEvent("mousemove", touchPoint(touch)));
+      return;
+    }
+
+    if (event.touches.length >= 2) {
+      const map = new Map(Array.from(event.touches).slice(0, 2).map((touchItem) => [touchItem.identifier, touchPoint(touchItem)]));
+      const nextPinch = pinchSnapshot(map);
+      if (pinch && nextPinch) {
+        const deltaDistance = nextPinch.distance - pinch.distance;
+        if (Math.abs(deltaDistance) > 2) {
+          const deltaY = clamp(-deltaDistance * 2.2, -140, 140);
+          canvas.dispatchEvent(makeWheelLikeEvent(nextPinch.center, deltaY));
+        }
+      }
+      pinch = nextPinch;
+    }
+  }, { passive: false });
+
+  function finishTouch(event) {
+    event.preventDefault();
+
+    if (activeTouchId != null) {
+      const touch = Array.from(event.changedTouches).find((item) => item.identifier === activeTouchId) || event.changedTouches[0];
+      if (touch) {
+        window.dispatchEvent(makeMouseLikeEvent("mouseup", touchPoint(touch)));
+      }
+    }
+
+    activeTouchId = null;
+    if (event.touches.length < 2) {
+      pinch = null;
+    }
+  }
+
+  canvas.addEventListener("touchend", finishTouch, { passive: false });
+  canvas.addEventListener("touchcancel", finishTouch, { passive: false });
+}
+
 function findLegacyScript(legacyDoc) {
   for (const scriptNode of legacyDoc.querySelectorAll("script")) {
     const source = scriptNode.textContent || "";
@@ -451,6 +650,7 @@ function applyPostBootControls(config) {
   document.body.dataset.launchChrome = config.chrome;
   injectShellStyles();
   createInspectorToggle(config);
+  attachTouchBridge(config);
 
   if (config.startPaused) {
     requestAnimationFrame(() => {
