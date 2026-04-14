@@ -241,12 +241,29 @@ function patchLegacyScript(source, runtime) {
   return patched;
 }
 
+function resolveLegacyAssetUrl(path) {
+  return new URL(path, LEGACY_ENTRY).toString();
+}
+
 function copyLegacyStyles(legacyDoc) {
-  for (const styleNode of legacyDoc.head.querySelectorAll("style")) {
-    const style = document.createElement("style");
-    style.setAttribute("data-legacy-style", "true");
-    style.textContent = styleNode.textContent || "";
-    document.head.append(style);
+  for (const node of legacyDoc.head.querySelectorAll('style, link[rel="stylesheet"]')) {
+    if (node.tagName === "STYLE") {
+      const style = document.createElement("style");
+      style.setAttribute("data-legacy-style", "true");
+      style.textContent = node.textContent || "";
+      document.head.append(style);
+      continue;
+    }
+
+    const href = node.getAttribute("href");
+    if (!href) continue;
+
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = resolveLegacyAssetUrl(href);
+    if (node.media) link.media = node.media;
+    link.setAttribute("data-legacy-style", "true");
+    document.head.append(link);
   }
 }
 
@@ -934,14 +951,23 @@ function attachTouchBridge(config) {
   canvas.addEventListener("touchcancel", finishTouch, { passive: false });
 }
 
-function findLegacyScript(legacyDoc) {
+async function loadLegacyScript(legacyDoc) {
   for (const scriptNode of legacyDoc.querySelectorAll("script")) {
     const source = scriptNode.textContent || "";
     if (source.includes(SCRIPT_MARKER)) {
       return source;
     }
+
+    const src = scriptNode.getAttribute("src");
+    if (!src) continue;
+
+    const response = await fetch(resolveLegacyAssetUrl(src), { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Failed to load legacy script ${src}: ${response.status} ${response.statusText}`);
+    }
+    return await response.text();
   }
-  throw new Error("Legacy inline script was not found.");
+  throw new Error("Legacy script source was not found.");
 }
 
 function prepareLegacyDocument(legacyDoc, config) {
@@ -1009,7 +1035,7 @@ async function bootLegacyWorld(config) {
   const html = await response.text();
   const legacyDoc = new DOMParser().parseFromString(html, "text/html");
   const legacyTitle = legacyDoc.querySelector("title")?.textContent?.trim();
-  const legacyScript = patchLegacyScript(findLegacyScript(legacyDoc), runtime);
+  const legacyScript = patchLegacyScript(await loadLegacyScript(legacyDoc), runtime);
   const app = prepareLegacyDocument(legacyDoc, config);
 
   if (legacyTitle) {

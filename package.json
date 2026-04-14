@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "build:legacy": "node scripts/build-legacy-app.mjs",
+    "check:legacy": "node --check src/legacy-app.js",
+    "serve": "python -m http.server 4173"
+  },
   "dependencies": {
     "@google/gemini-cli": "^0.34.0"
   }
