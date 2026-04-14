@@ -269,6 +269,33 @@ function injectShellStyles() {
       max-width: 34vw;
     }
 
+    body[data-launch-device] #toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    body[data-launch-device] #toolbar .group[data-shell-group="sim"] {
+      display: none;
+    }
+
+    body[data-launch-device] #toolbar .group[data-shell-group="seed"] {
+      flex: 1 1 300px;
+      min-width: 220px;
+    }
+
+    body[data-launch-device] #toolbar .group[data-shell-group="timeline"] {
+      flex: 1 1 260px;
+    }
+
+    body[data-launch-device] #toolbar .group[data-shell-group="overlays"] {
+      flex: 2 1 420px;
+    }
+
+    body[data-launch-device] #toolbar .shellToolbarFold {
+      display: contents;
+    }
+
     @media (max-width: 1500px) {
       body[data-launch-device="laptop"] #toolbar {
         gap: 8px;
@@ -295,13 +322,15 @@ function injectShellStyles() {
       }
     }
 
-    body[data-launch-device="mobile"] #toolbar {
+      body[data-launch-device="mobile"] #toolbar {
       gap: 8px;
       padding: 8px;
       align-items: stretch;
-    }
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      }
 
-    body[data-launch-device="mobile"] .group {
+    body[data-launch-device="mobile"] #toolbar .group {
       gap: 6px;
       padding: 6px;
       flex-wrap: wrap;
@@ -321,6 +350,22 @@ function injectShellStyles() {
     body[data-launch-device="mobile"] .checks {
       max-width: none;
       width: 100%;
+    }
+
+    body[data-launch-device="mobile"] #toolbar .group[data-shell-group="timeline"] {
+      display: none;
+    }
+
+    body[data-launch-device="mobile"] #toolbar .group[data-shell-group="overlays"] {
+      display: none;
+    }
+
+    body[data-launch-device="mobile"] #toolbar .group[data-shell-group="pulse"] {
+      display: none;
+    }
+
+    body[data-launch-device="mobile"] #toolbar .group[data-shell-group="save"] {
+      display: none;
     }
 
     body[data-launch-device="mobile"] #overlayHud {
@@ -374,6 +419,118 @@ function injectShellStyles() {
       height: min(62vh, 72dvh);
     }
 
+    #shellQuickDock {
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      z-index: 55;
+      transform: translateX(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(180deg, rgba(14, 19, 26, 0.96), rgba(9, 13, 18, 0.96));
+      box-shadow: 0 20px 44px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(14px);
+    }
+
+    #shellQuickDock .shellDockGroup {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    #shellQuickDock button {
+      border-radius: 12px;
+      min-height: 40px;
+      min-width: 40px;
+      padding: 8px 12px;
+      white-space: nowrap;
+    }
+
+    #shellQuickDock .shellPrimary {
+      min-width: 88px;
+    }
+
+    #shellQuickDock .shellSpeedReadout {
+      min-width: 64px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    #shellQuickDock .shellTurboActive {
+      border-color: rgba(138, 217, 255, 0.34);
+      background: linear-gradient(180deg, rgba(82, 148, 188, 0.34), rgba(39, 71, 108, 0.24));
+    }
+
+    body[data-launch-device="mobile"] #shellQuickDock {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      transform: none;
+      width: auto;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 8px;
+    }
+
+    body[data-launch-device="mobile"] #shellQuickDock .shellDockGroup {
+      flex: 1 1 auto;
+      min-width: 0;
+      justify-content: center;
+    }
+
+    body[data-launch-device="mobile"] #shellQuickDock button {
+      min-height: 42px;
+      min-width: 0;
+      padding: 8px 10px;
+      font-size: 12px;
+      flex: 1 1 auto;
+    }
+
+    body[data-launch-device="mobile"] #shellQuickDock .shellPrimary {
+      flex: 1.25 1 auto;
+    }
+
+    #shellMorePanel {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 68px;
+      z-index: 54;
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(14, 19, 26, 0.98), rgba(9, 13, 18, 0.98));
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+      padding: 10px;
+      max-height: min(56vh, 560px);
+      overflow: auto;
+    }
+
+    body.shell-more-open #shellMorePanel {
+      display: block;
+    }
+
+    #shellMorePanel .group {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    #shellMorePanel .group:first-child {
+      margin-top: 0;
+    }
+
+    body[data-launch-device="mobile"] #main {
+      padding-bottom: 78px;
+    }
+
     #shellInspectorToggle {
       position: fixed;
       right: 14px;
@@ -393,6 +550,10 @@ function injectShellStyles() {
       align-items: center;
       gap: 8px;
     }
+
+    body[data-launch-device="mobile"][data-launch-chrome="minimal"] #shellInspectorToggle {
+      bottom: 68px;
+    }
   `;
   document.head.append(style);
 }
@@ -407,6 +568,171 @@ function createInspectorToggle(config) {
     document.body.classList.toggle("shell-inspector-open");
   });
   document.body.append(button);
+}
+
+function labelToolbarGroups() {
+  const toolbar = document.getElementById("toolbar");
+  if (!toolbar || toolbar.dataset.shellLabeled === "1") return;
+  const labels = ["seed", "sim", "pulse", "save", "timeline", "overlays"];
+  const groups = Array.from(toolbar.querySelectorAll(":scope > .group"));
+  groups.forEach((group, index) => {
+    if (labels[index]) {
+      group.dataset.shellGroup = labels[index];
+    }
+  });
+  toolbar.dataset.shellLabeled = "1";
+}
+
+function ensureMorePanel() {
+  let panel = document.getElementById("shellMorePanel");
+  if (panel) return panel;
+  panel = document.createElement("div");
+  panel.id = "shellMorePanel";
+  panel.setAttribute("aria-label", "More controls");
+  document.body.append(panel);
+  return panel;
+}
+
+function mountToolbarIntoMorePanel(config) {
+  const toolbar = document.getElementById("toolbar");
+  if (!toolbar) return;
+
+  labelToolbarGroups();
+
+  const panel = ensureMorePanel();
+  panel.innerHTML = "";
+
+  const groups = {
+    pulse: toolbar.querySelector('.group[data-shell-group="pulse"]'),
+    save: toolbar.querySelector('.group[data-shell-group="save"]'),
+    timeline: toolbar.querySelector('.group[data-shell-group="timeline"]'),
+    overlays: toolbar.querySelector('.group[data-shell-group="overlays"]'),
+  };
+
+  if (config.device === "mobile") {
+    for (const group of Object.values(groups)) {
+      if (group) {
+        panel.append(group);
+      }
+    }
+    return;
+  }
+
+  const overlays = groups.overlays;
+  if (overlays && config.chrome === "minimal") {
+    panel.append(overlays);
+  }
+}
+
+function clickLegacyControl(id) {
+  const target = document.getElementById(id);
+  if (target) target.click();
+}
+
+function createQuickDock(config) {
+  const existing = document.getElementById("shellQuickDock");
+  if (existing) existing.remove();
+
+  const dock = document.createElement("div");
+  dock.id = "shellQuickDock";
+
+  const transport = document.createElement("div");
+  transport.className = "shellDockGroup";
+  transport.innerHTML = `
+    <button type="button" data-action="slower" aria-label="Slower">-</button>
+    <button type="button" class="shellPrimary" data-action="pause" aria-label="Play or pause">Play</button>
+    <button type="button" class="shellSpeedReadout" data-action="speed" aria-label="Cycle speed">1x</button>
+    <button type="button" data-action="faster" aria-label="Faster">+</button>
+    <button type="button" data-action="turbo" aria-label="Toggle turbo">Turbo</button>
+  `;
+
+  const view = document.createElement("div");
+  view.className = "shellDockGroup";
+  const moreButton = config.device === "mobile"
+    ? `<button type="button" data-action="more" aria-label="More controls">More</button>`
+    : "";
+  view.innerHTML = `
+    <button type="button" data-action="zoomOut" aria-label="Zoom out">-</button>
+    <button type="button" data-action="fit" aria-label="Fit camera">Fit</button>
+    <button type="button" data-action="zoomIn" aria-label="Zoom in">+</button>
+    ${moreButton}
+  `;
+
+  dock.append(transport, view);
+  document.body.append(dock);
+
+  const actionMap = {
+    slower: "slowerBtn",
+    pause: "pauseBtn",
+    speed: "speedBtn",
+    faster: "fasterBtn",
+    turbo: "turboBtn",
+    zoomOut: "zoomOutBtn",
+    fit: "fitBtn",
+    zoomIn: "zoomInBtn",
+  };
+
+  dock.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === "more") {
+      document.body.classList.toggle("shell-more-open");
+      return;
+    }
+    const legacyId = actionMap[action];
+    if (legacyId) clickLegacyControl(legacyId);
+  });
+}
+
+function syncQuickDock() {
+  const dock = document.getElementById("shellQuickDock");
+  if (!dock) return;
+  const pauseBtn = document.getElementById("pauseBtn");
+  const speedBtn = document.getElementById("speedBtn");
+  const turboBtn = document.getElementById("turboBtn");
+  const morePanelOpen = document.body.classList.contains("shell-more-open");
+
+  const pauseDisplay = dock.querySelector('button[data-action="pause"]');
+  const speedDisplay = dock.querySelector('button[data-action="speed"]');
+  const turboDisplay = dock.querySelector('button[data-action="turbo"]');
+  const moreDisplay = dock.querySelector('button[data-action="more"]');
+
+  if (pauseBtn && pauseDisplay) {
+    pauseDisplay.textContent = pauseBtn.textContent.trim();
+  }
+  if (speedBtn && speedDisplay) {
+    speedDisplay.textContent = speedBtn.textContent.trim();
+  }
+  if (turboBtn && turboDisplay) {
+    turboDisplay.textContent = turboBtn.textContent.trim() === "Turbo Off" ? "Turbo" : turboBtn.textContent.trim();
+    turboDisplay.classList.toggle("shellTurboActive", turboBtn.textContent.includes("On"));
+  }
+  if (moreDisplay) {
+    moreDisplay.textContent = morePanelOpen ? "Close" : "More";
+  }
+}
+
+function bindShellDocumentEvents(config) {
+  if (document.body.dataset.shellEventsBound === "1") return;
+  document.body.dataset.shellEventsBound = "1";
+
+  document.addEventListener("pointerdown", (event) => {
+    if (!document.body.classList.contains("shell-more-open")) return;
+    const panel = document.getElementById("shellMorePanel");
+    const dock = document.getElementById("shellQuickDock");
+    if (!panel || panel.contains(event.target) || dock?.contains(event.target)) return;
+    document.body.classList.remove("shell-more-open");
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      document.body.classList.remove("shell-more-open");
+      if (config.chrome === "minimal") {
+        document.body.classList.remove("shell-inspector-open");
+      }
+    }
+  });
 }
 
 function makeMouseLikeEvent(type, point) {
@@ -649,8 +975,17 @@ function applyPostBootControls(config) {
   document.body.dataset.launchDevice = config.device;
   document.body.dataset.launchChrome = config.chrome;
   injectShellStyles();
+  mountToolbarIntoMorePanel(config);
+  createQuickDock(config);
   createInspectorToggle(config);
   attachTouchBridge(config);
+  bindShellDocumentEvents(config);
+  syncQuickDock();
+
+  if (window.__NEWLIFE_SHELL_SYNC__) {
+    clearInterval(window.__NEWLIFE_SHELL_SYNC__);
+  }
+  window.__NEWLIFE_SHELL_SYNC__ = window.setInterval(syncQuickDock, 250);
 
   if (config.startPaused) {
     requestAnimationFrame(() => {
