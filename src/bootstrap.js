@@ -274,18 +274,33 @@ function injectShellStyles() {
   style.textContent = `
     body[data-launch-device] {
       min-height: 100vh;
+      min-height: 100dvh;
       padding: 0;
       background: #06080b;
     }
 
     body[data-launch-device] #app {
       min-height: 100vh;
+      min-height: 100dvh;
     }
 
     body[data-launch-device="laptop"] #inspector {
       width: 368px;
       min-width: 332px;
       max-width: 38vw;
+    }
+
+    body[data-launch-device="laptop"] #toolbar .group[data-shell-group="overlays"] {
+      min-width: 0;
+      flex: 1 1 420px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    body[data-launch-device="laptop"] #toolbar .checks {
+      flex-wrap: nowrap;
+      max-width: none;
+      white-space: nowrap;
     }
 
     body[data-launch-device] #toolbar {
@@ -341,13 +356,24 @@ function injectShellStyles() {
       }
     }
 
-      body[data-launch-device="mobile"] #toolbar {
+    body[data-launch-device="mobile"] #toolbar {
       gap: 8px;
       padding: 8px;
       align-items: stretch;
       display: grid;
       grid-template-columns: minmax(0, 1fr);
-      }
+    }
+
+    body[data-launch-device="mobile"] #main {
+      flex-direction: column;
+    }
+
+    body[data-launch-device="mobile"] #inspector {
+      width: 100%;
+      max-width: none;
+      border-left: none;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
 
     body[data-launch-device="mobile"] #toolbar .group {
       gap: 6px;
@@ -491,18 +517,20 @@ function injectShellStyles() {
     body[data-launch-device="mobile"] #shellQuickDock {
       left: 10px;
       right: 10px;
-      bottom: 10px;
+      bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       transform: none;
       width: auto;
-      justify-content: space-between;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
       gap: 6px;
       padding: 8px;
     }
 
     body[data-launch-device="mobile"] #shellQuickDock .shellDockGroup {
-      flex: 1 1 auto;
+      width: 100%;
       min-width: 0;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     body[data-launch-device="mobile"] #shellQuickDock button {
@@ -533,6 +561,14 @@ function injectShellStyles() {
       overflow: auto;
     }
 
+    body[data-launch-device="mobile"] #shellMorePanel {
+      left: 10px;
+      right: 10px;
+      bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+      max-height: min(62dvh, 520px);
+      padding: 10px;
+    }
+
     body.shell-more-open #shellMorePanel {
       display: block;
     }
@@ -546,8 +582,42 @@ function injectShellStyles() {
       margin-top: 0;
     }
 
+    #shellMorePanel .shellForecastGroup {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #shellMorePanel .shellForecastTitle {
+      width: 100%;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #8ea2b7;
+    }
+
+    #shellMorePanel .shellForecastGroup button {
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+
     body[data-launch-device="mobile"] #main {
-      padding-bottom: 78px;
+      padding-bottom: calc(126px + env(safe-area-inset-bottom, 0px));
+    }
+
+    body[data-launch-device="mobile"] #shellMorePanel .shellForecastGroup button {
+      flex-basis: 100%;
+    }
+
+    body[data-launch-device="mobile"] #shellMorePanel .group[data-shell-group="timeline"] label {
+      width: 100%;
+    }
+
+    body[data-launch-device="mobile"] #shellMorePanel .group[data-shell-group="overlays"] {
+      max-height: min(28dvh, 240px);
+      overflow: auto;
+      align-content: flex-start;
     }
 
     #shellInspectorToggle {
@@ -571,7 +641,26 @@ function injectShellStyles() {
     }
 
     body[data-launch-device="mobile"][data-launch-chrome="minimal"] #shellInspectorToggle {
-      bottom: 68px;
+      bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+    }
+
+    body.shell-more-open[data-launch-chrome="minimal"] #shellInspectorToggle {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body[data-launch-device="mobile"][data-launch-chrome="full"] #inspector {
+      width: 100%;
+      max-width: none;
+      height: clamp(240px, 38dvh, 420px);
+    }
+
+    body[data-launch-device="mobile"][data-launch-chrome="compact"] #inspector {
+      height: clamp(208px, 32dvh, 340px);
+    }
+
+    body.shell-inspector-open[data-launch-device="mobile"][data-launch-chrome="minimal"] #inspector {
+      bottom: calc(74px + env(safe-area-inset-bottom, 0px));
     }
   `;
   document.head.append(style);
@@ -583,8 +672,11 @@ function createInspectorToggle(config) {
   button.id = "shellInspectorToggle";
   button.type = "button";
   button.textContent = "Inspector";
+  button.setAttribute("aria-expanded", "false");
   button.addEventListener("click", () => {
+    document.body.classList.remove("shell-more-open");
     document.body.classList.toggle("shell-inspector-open");
+    button.setAttribute("aria-expanded", document.body.classList.contains("shell-inspector-open") ? "true" : "false");
   });
   document.body.append(button);
 }
@@ -602,6 +694,49 @@ function labelToolbarGroups() {
   toolbar.dataset.shellLabeled = "1";
 }
 
+const SHELL_GROUP_ORDER = ["seed", "sim", "pulse", "save", "timeline", "overlays"];
+const SHELL_MORE_GROUPS = ["pulse", "save", "timeline", "overlays"];
+const LAPTOP_OVERLAY_FOLD_WIDTH = 1660;
+const LAPTOP_SECONDARY_FOLD_WIDTH = 1380;
+const LAPTOP_TIMELINE_FOLD_WIDTH = 1200;
+
+function resolveShellGroupLayout(config) {
+  const width = window.innerWidth || document.documentElement.clientWidth || 0;
+  const panelGroups = new Set();
+
+  if (config.device === "mobile") {
+    for (const key of SHELL_MORE_GROUPS) {
+      panelGroups.add(key);
+    }
+    return { panelGroups };
+  }
+
+  if (config.chrome === "minimal") {
+    panelGroups.add("pulse");
+    panelGroups.add("save");
+    panelGroups.add("overlays");
+    if (width < LAPTOP_OVERLAY_FOLD_WIDTH) {
+      panelGroups.add("timeline");
+    }
+    return { panelGroups };
+  }
+
+  if (width < LAPTOP_OVERLAY_FOLD_WIDTH) {
+    panelGroups.add("overlays");
+  }
+
+  if (width < LAPTOP_SECONDARY_FOLD_WIDTH) {
+    panelGroups.add("pulse");
+    panelGroups.add("save");
+  }
+
+  if (width < LAPTOP_TIMELINE_FOLD_WIDTH) {
+    panelGroups.add("timeline");
+  }
+
+  return { panelGroups };
+}
+
 function ensureMorePanel() {
   let panel = document.getElementById("shellMorePanel");
   if (panel) return panel;
@@ -612,6 +747,40 @@ function ensureMorePanel() {
   return panel;
 }
 
+function ensureShellForecastGroup(panel) {
+  let group = panel.querySelector(".shellForecastGroup");
+  if (group) return group;
+
+  group = document.createElement("div");
+  group.className = "group shellForecastGroup";
+  group.innerHTML = `
+    <div class="shellForecastTitle">Forecast</div>
+    <button type="button" data-shell-forecast="estimate60">Estimate +60s</button>
+    <button type="button" data-shell-forecast="estimate180">Estimate +180s</button>
+    <button type="button" data-shell-forecast="commit">Fast-Forward +60s</button>
+  `;
+
+  group.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-shell-forecast]");
+    if (!button) return;
+    const action = button.dataset.shellForecast;
+    if (action === "estimate60") {
+      clickLegacyControl("forecast60Btn");
+      return;
+    }
+    if (action === "estimate180") {
+      clickLegacyControl("forecast180Btn");
+      return;
+    }
+    if (action === "commit") {
+      clickLegacyControl("commitForecastBtn");
+    }
+  });
+
+  panel.prepend(group);
+  return group;
+}
+
 function mountToolbarIntoMorePanel(config) {
   const toolbar = document.getElementById("toolbar");
   if (!toolbar) return;
@@ -619,28 +788,33 @@ function mountToolbarIntoMorePanel(config) {
   labelToolbarGroups();
 
   const panel = ensureMorePanel();
-  panel.innerHTML = "";
+  ensureShellForecastGroup(panel);
+  const allGroups = new Map();
 
-  const groups = {
-    pulse: toolbar.querySelector('.group[data-shell-group="pulse"]'),
-    save: toolbar.querySelector('.group[data-shell-group="save"]'),
-    timeline: toolbar.querySelector('.group[data-shell-group="timeline"]'),
-    overlays: toolbar.querySelector('.group[data-shell-group="overlays"]'),
-  };
+  for (const group of document.querySelectorAll('#toolbar .group[data-shell-group], #shellMorePanel .group[data-shell-group]')) {
+    allGroups.set(group.dataset.shellGroup, group);
+  }
 
-  if (config.device === "mobile") {
-    for (const group of Object.values(groups)) {
-      if (group) {
-        panel.append(group);
-      }
+  const { panelGroups } = resolveShellGroupLayout(config);
+
+  for (const key of SHELL_GROUP_ORDER) {
+    const group = allGroups.get(key);
+    if (!group) continue;
+    if (panelGroups.has(key)) {
+      panel.append(group);
+    } else {
+      toolbar.append(group);
     }
-    return;
   }
 
-  const overlays = groups.overlays;
-  if (overlays && config.chrome === "minimal") {
-    panel.append(overlays);
+  const hasMore = panel.childElementCount > 0;
+  panel.hidden = !hasMore;
+  panel.dataset.hasContent = hasMore ? "1" : "0";
+  if (!hasMore) {
+    document.body.classList.remove("shell-more-open");
   }
+  document.body.classList.toggle("shell-more-available", hasMore);
+  syncQuickDock();
 }
 
 function clickLegacyControl(id) {
@@ -668,9 +842,7 @@ function createQuickDock(config) {
 
   const view = document.createElement("div");
   view.className = "shellDockGroup";
-  const moreButton = isMobile
-    ? `<button type="button" data-action="more" aria-label="More controls">More</button>`
-    : "";
+  const moreButton = `<button type="button" data-action="more" aria-label="More controls">More</button>`;
   view.innerHTML = `
     <button type="button" data-action="zoomOut" aria-label="Zoom out">${isMobile ? "-" : "Zoom -"}</button>
     <button type="button" data-action="fit" aria-label="Fit camera">Fit</button>
@@ -697,6 +869,9 @@ function createQuickDock(config) {
     if (!button) return;
     const action = button.dataset.action;
     if (action === "more") {
+      if (config.chrome === "minimal") {
+        document.body.classList.remove("shell-inspector-open");
+      }
       document.body.classList.toggle("shell-more-open");
       return;
     }
@@ -711,12 +886,18 @@ function syncQuickDock() {
   const pauseBtn = document.getElementById("pauseBtn");
   const speedBtn = document.getElementById("speedBtn");
   const turboBtn = document.getElementById("turboBtn");
+  const forecast60Btn = document.getElementById("forecast60Btn");
+  const forecast180Btn = document.getElementById("forecast180Btn");
+  const commitForecastBtn = document.getElementById("commitForecastBtn");
+  const panel = document.getElementById("shellMorePanel");
+  const hasMore = !!panel && panel.childElementCount > 0;
   const morePanelOpen = document.body.classList.contains("shell-more-open");
 
   const pauseDisplay = dock.querySelector('button[data-action="pause"]');
   const speedDisplay = dock.querySelector('button[data-action="speed"]');
   const turboDisplay = dock.querySelector('button[data-action="turbo"]');
   const moreDisplay = dock.querySelector('button[data-action="more"]');
+  const forecastGroup = panel?.querySelector(".shellForecastGroup");
 
   if (pauseBtn && pauseDisplay) {
     pauseDisplay.textContent = pauseBtn.textContent.trim();
@@ -729,13 +910,59 @@ function syncQuickDock() {
     turboDisplay.classList.toggle("shellTurboActive", turboBtn.textContent.includes("On"));
   }
   if (moreDisplay) {
-    moreDisplay.textContent = morePanelOpen ? "Close" : "More";
+    moreDisplay.hidden = !hasMore;
+    moreDisplay.setAttribute("aria-expanded", hasMore && morePanelOpen ? "true" : "false");
+    if (hasMore) {
+      moreDisplay.textContent = morePanelOpen ? "Close" : "More";
+    }
+  }
+  if (!hasMore && morePanelOpen) {
+    document.body.classList.remove("shell-more-open");
+  }
+
+  const inspectorToggle = document.getElementById("shellInspectorToggle");
+  if (inspectorToggle) {
+    inspectorToggle.setAttribute("aria-expanded", document.body.classList.contains("shell-inspector-open") ? "true" : "false");
+  }
+
+  if (forecastGroup) {
+    const estimate60Display = forecastGroup.querySelector('button[data-shell-forecast="estimate60"]');
+    const estimate180Display = forecastGroup.querySelector('button[data-shell-forecast="estimate180"]');
+    const commitDisplay = forecastGroup.querySelector('button[data-shell-forecast="commit"]');
+    const forecastVisible = !!(forecast60Btn && forecast180Btn && commitForecastBtn);
+
+    forecastGroup.hidden = !forecastVisible;
+    if (estimate60Display && forecast60Btn) {
+      estimate60Display.textContent = forecast60Btn.textContent.trim();
+    }
+    if (estimate180Display && forecast180Btn) {
+      estimate180Display.textContent = forecast180Btn.textContent.trim();
+    }
+    if (commitDisplay && commitForecastBtn) {
+      commitDisplay.textContent = commitForecastBtn.textContent.trim();
+    }
   }
 }
 
 function bindShellDocumentEvents(config) {
   if (document.body.dataset.shellEventsBound === "1") return;
   document.body.dataset.shellEventsBound = "1";
+
+  let resizeFrame = 0;
+  let syncingLayoutResize = false;
+  window.addEventListener("resize", () => {
+    if (syncingLayoutResize) {
+      syncingLayoutResize = false;
+      return;
+    }
+    if (resizeFrame) return;
+    resizeFrame = window.requestAnimationFrame(() => {
+      resizeFrame = 0;
+      mountToolbarIntoMorePanel(config);
+      syncingLayoutResize = true;
+      window.dispatchEvent(new Event("resize"));
+    });
+  });
 
   document.addEventListener("pointerdown", (event) => {
     if (!document.body.classList.contains("shell-more-open")) return;
@@ -1016,14 +1243,19 @@ function applyPostBootControls(config) {
   }
   window.__NEWLIFE_SHELL_SYNC__ = window.setInterval(syncQuickDock, 250);
 
-  if (config.startPaused) {
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event("resize"));
     requestAnimationFrame(() => {
+      const fitBtn = document.getElementById("fitBtn");
+      if (fitBtn) fitBtn.click();
+
+      if (!config.startPaused) return;
       const pauseBtn = document.getElementById("pauseBtn");
       if (pauseBtn && pauseBtn.textContent.trim() === "Pause") {
         pauseBtn.click();
       }
     });
-  }
+  });
 }
 
 async function bootLegacyWorld(config) {

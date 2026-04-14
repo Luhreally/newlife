@@ -229,6 +229,9 @@ const camera = {
   moved: false
 };
 
+const MIN_CAMERA_ZOOM = 0.1;
+const MAX_CAMERA_ZOOM = 5.5;
+
 const ui = {
   paused: false,
   speedIndex: 3,
@@ -482,6 +485,22 @@ function worldToScreenAtCamera(x, y, zoom, camX, camY, z=0){
 }
 function worldToScreen(x, y, z=0){
   return worldToScreenAtCamera(x, y, camera.zoom, camera.x, camera.y, z);
+}
+function cameraFitZoom(paddingPx=32){
+  const viewW = Math.max(1, canvas.width / dpr - paddingPx * 2);
+  const viewH = Math.max(1, canvas.height / dpr - paddingPx * 2);
+  const span = WORLD_W + WORLD_H;
+  const verticalLift = 20 * ISO_Z_SCALE;
+  const fitX = viewW / Math.max(1, span * ISO_X_SCALE);
+  const fitY = viewH / Math.max(1, span * ISO_Y_SCALE + verticalLift);
+  return clamp(Math.min(fitX, fitY), MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM);
+}
+function focusCameraOnWorld(paddingPx=32){
+  camera.x = WORLD_W * 0.5;
+  camera.y = WORLD_H * 0.5;
+  const fitZoom = cameraFitZoom(paddingPx);
+  camera.zoom = fitZoom;
+  camera.targetZoom = fitZoom;
 }
 function screenDeltaToWorld(dx, dy, zoom){
   const invX = dx / (ISO_X_SCALE * zoom);

@@ -1807,9 +1807,7 @@ function newWorld(seedStr){
   populateWorld();
   recordEvent('founding', `world seeded from ${seedStr}`, WORLD_W * 0.5, WORLD_H * 0.5, null);
   recordEvent('era', `Genesis era: ${ERA_STAGES[0].summary}`, WORLD_W * 0.5, WORLD_H * 0.5, null);
-  camera.x = state.macro.stable.x;
-  camera.y = state.macro.stable.y;
-  camera.zoom = camera.targetZoom = 0.46;
+  focusCameraOnWorld();
   setSelectedEntity(null);
   ui.replay = false;
   ui.liveBackup = null;

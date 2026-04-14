@@ -600,14 +600,12 @@ function bindUI(){
     });
   }
 
-  zoomInBtn.addEventListener('click', () => camera.targetZoom = clamp(camera.targetZoom * 1.22, 0.18, 5.4));
+  zoomInBtn.addEventListener('click', () => camera.targetZoom = clamp(camera.targetZoom * 1.22, MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM));
   bloomBtn.addEventListener('click', () => applyNudge('bloom'));
   shelterBtn.addEventListener('click', () => applyNudge('shelter'));
-  zoomOutBtn.addEventListener('click', () => camera.targetZoom = clamp(camera.targetZoom / 1.22, 0.18, 5.4));
+  zoomOutBtn.addEventListener('click', () => camera.targetZoom = clamp(camera.targetZoom / 1.22, MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM));
   fitBtn.addEventListener('click', () => {
-    camera.x = WORLD_W * 0.5;
-    camera.y = WORLD_H * 0.5;
-    camera.targetZoom = 0.46;
+    focusCameraOnWorld();
   });
   saveBtn.addEventListener('click', saveWorldToFile);
   loadBtn.addEventListener('click', () => loadInput.click());
@@ -671,7 +669,7 @@ function bindUI(){
     const my = e.clientY - rect.top;
     const before = screenToWorld(mx, my);
     const scale = e.deltaY < 0 ? 1.14 : 0.88;
-    const nextZoom = clamp(camera.targetZoom * scale, 0.18, 5.5);
+    const nextZoom = clamp(camera.targetZoom * scale, MIN_CAMERA_ZOOM, MAX_CAMERA_ZOOM);
     const after = screenToWorldAt(mx, my, nextZoom);
     camera.targetZoom = nextZoom;
     camera.x += before.x - after.x;
