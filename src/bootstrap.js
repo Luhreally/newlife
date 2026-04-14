@@ -1,12 +1,12 @@
 const LEGACY_ENTRY = new URL("../one_file_world.html", import.meta.url);
 const SCRIPT_MARKER = "(() => {";
-const STORAGE_KEY = "newlife.launch-config.v1";
+const STORAGE_KEY = "newlife.launch-config.v2";
 
 const DEFAULT_CONFIG = {
   device: "laptop",
   performance: "balanced",
   worldScale: "standard",
-  chrome: "compact",
+  chrome: "full",
   seed: "woven-ember-4701",
   startPaused: false,
 };
@@ -64,7 +64,8 @@ function normalizeConfig(raw = {}) {
   const device = raw.device === "mobile" ? "mobile" : "laptop";
   const performance = ["rich", "balanced", "saver"].includes(raw.performance) ? raw.performance : "balanced";
   const worldScale = raw.worldScale === "compact" ? "compact" : "standard";
-  const chrome = ["full", "compact", "minimal"].includes(raw.chrome) ? raw.chrome : "compact";
+  const defaultChrome = device === "mobile" ? "compact" : "full";
+  const chrome = ["full", "compact", "minimal"].includes(raw.chrome) ? raw.chrome : defaultChrome;
   const seed = typeof raw.seed === "string" && raw.seed.trim() ? raw.seed.trim() : DEFAULT_CONFIG.seed;
   const startPaused = !!raw.startPaused;
   return { device, performance, worldScale, chrome, seed, startPaused };
@@ -282,8 +283,9 @@ function injectShellStyles() {
     }
 
     body[data-launch-device="laptop"] #inspector {
-      width: 320px;
-      max-width: 34vw;
+      width: 368px;
+      min-width: 332px;
+      max-width: 38vw;
     }
 
     body[data-launch-device] #toolbar {
@@ -313,29 +315,29 @@ function injectShellStyles() {
       display: contents;
     }
 
-    @media (max-width: 1500px) {
+    @media (max-width: 1280px) {
       body[data-launch-device="laptop"] #toolbar {
-        gap: 8px;
-        padding: 8px 10px;
+        gap: 10px;
+        padding: 9px 10px;
       }
 
       body[data-launch-device="laptop"] .group {
-        gap: 6px;
-        padding: 5px 6px;
+        gap: 7px;
+        padding: 6px 7px;
       }
 
       body[data-launch-device="laptop"] button {
-        padding: 5px 8px;
+        padding: 6px 9px;
         font-size: 12px;
       }
 
       body[data-launch-device="laptop"] input[type="text"],
       body[data-launch-device="laptop"] input[type="range"] {
-        width: 144px;
+        width: 156px;
       }
 
       body[data-launch-device="laptop"] .checks {
-        max-width: 440px;
+        max-width: 520px;
       }
     }
 
@@ -401,8 +403,8 @@ function injectShellStyles() {
     }
 
     body[data-launch-chrome="compact"] #inspector {
-      width: 300px;
-      max-width: 31vw;
+      width: 340px;
+      max-width: 34vw;
     }
 
     body[data-launch-device="mobile"][data-launch-chrome="compact"] #inspector {
@@ -649,6 +651,7 @@ function clickLegacyControl(id) {
 function createQuickDock(config) {
   const existing = document.getElementById("shellQuickDock");
   if (existing) existing.remove();
+  const isMobile = config.device === "mobile";
 
   const dock = document.createElement("div");
   dock.id = "shellQuickDock";
@@ -656,22 +659,22 @@ function createQuickDock(config) {
   const transport = document.createElement("div");
   transport.className = "shellDockGroup";
   transport.innerHTML = `
-    <button type="button" data-action="slower" aria-label="Slower">-</button>
+    <button type="button" data-action="slower" aria-label="Slower">${isMobile ? "-" : "Slower"}</button>
     <button type="button" class="shellPrimary" data-action="pause" aria-label="Play or pause">Play</button>
     <button type="button" class="shellSpeedReadout" data-action="speed" aria-label="Cycle speed">1x</button>
-    <button type="button" data-action="faster" aria-label="Faster">+</button>
+    <button type="button" data-action="faster" aria-label="Faster">${isMobile ? "+" : "Faster"}</button>
     <button type="button" data-action="turbo" aria-label="Toggle turbo">Turbo</button>
   `;
 
   const view = document.createElement("div");
   view.className = "shellDockGroup";
-  const moreButton = config.device === "mobile"
+  const moreButton = isMobile
     ? `<button type="button" data-action="more" aria-label="More controls">More</button>`
     : "";
   view.innerHTML = `
-    <button type="button" data-action="zoomOut" aria-label="Zoom out">-</button>
+    <button type="button" data-action="zoomOut" aria-label="Zoom out">${isMobile ? "-" : "Zoom -"}</button>
     <button type="button" data-action="fit" aria-label="Fit camera">Fit</button>
-    <button type="button" data-action="zoomIn" aria-label="Zoom in">+</button>
+    <button type="button" data-action="zoomIn" aria-label="Zoom in">${isMobile ? "+" : "Zoom +"}</button>
     ${moreButton}
   `;
 

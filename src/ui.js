@@ -214,6 +214,21 @@ renderHud = function(){
   ui.dirty.hud = false;
 };
 
+renderHud = function(){
+  const worldText = `${state.worldName} - ${state.seedStr}`;
+  const sel = ui.selected ? `${ui.selected.type} selected` : 'nothing selected';
+  const forecastText = ui.forecast
+    ? ` - estimate +${ui.forecast.seconds}s: ${ui.forecast.camps} camps / ${ui.forecast.settlements} settlements`
+    : '';
+  const viewText = `${getZoomMode()} - ${state.creatures.length} creatures - ${state.camps.length} sites - ${(state.deposits || []).length} seams - ${state.fragments.length} blocks - ${sel}${forecastText}`;
+  if(!ui.dirty.hud && worldText === ui.hudCache.world && viewText === ui.hudCache.view) return;
+  setNodeText(hudWorld, worldText);
+  setNodeText(hudView, viewText);
+  ui.hudCache.world = worldText;
+  ui.hudCache.view = viewText;
+  ui.dirty.hud = false;
+};
+
 function render(){
   ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
   ctx.fillStyle = state.palette.background;
@@ -443,6 +458,29 @@ refreshInspector = function(force=false){
   ui.dirty.selection = false;
   ui.dirty.history = false;
   ui.dirty.inspector = false;
+};
+
+function sanitizeUiText(text){
+  return String(text)
+    .replace(/\s*(?:Â·|·|ТЗ|З)\s*/g, ' - ')
+    .replace(/\s+-\s+-\s+/g, ' - ');
+}
+
+const throttledRefreshInspector = refreshInspector;
+refreshInspector = function(force=false){
+  throttledRefreshInspector(force);
+  if(worldPanel){
+    const next = sanitizeUiText(worldPanel.innerHTML);
+    if(worldPanel.innerHTML !== next) worldPanel.innerHTML = next;
+  }
+  if(selectionPanel){
+    const next = sanitizeUiText(selectionPanel.innerHTML);
+    if(selectionPanel.innerHTML !== next) selectionPanel.innerHTML = next;
+  }
+  if(historyPanel){
+    const next = sanitizeUiText(historyPanel.innerHTML);
+    if(historyPanel.innerHTML !== next) historyPanel.innerHTML = next;
+  }
 };
 
 function pickEntity(wx, wy){
